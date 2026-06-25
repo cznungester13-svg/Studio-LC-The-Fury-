@@ -273,3 +273,114 @@ ON seller_listings(seller_id);
 
 CREATE INDEX idx_listings_product
 ON seller_listings(product_id);
+
+--=====================================================
+-- 2. CATEGORIES & BRANDS
+--=====================================================
+
+CREATE TABLE categories (
+    category_id UUID PRIMARY KEY DEFAYLT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE
+    parent_id UUID REFERENCES categories(category_id) ON DELETE SET NULL
+);
+
+CREATE TABLE brands (
+    brand_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE
+);
+
+--======================================================
+-- 3. PRODUCTS & ATTRIBUTES
+--======================================================
+
+CREATE TABLE products (
+    product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seller_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    category_id UUID REFERENCES categories(category_id) ON DELETE SET NULL,
+    brand_id UUID REFERENCES brands(brand_id) ON DELETE SET NULL,
+    TITLE varchar(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    condition VARCHAR(50) NOT NULL, -- e.g., 'New', "Like New", 'Gently Used'
+    status VARCHAR(20) DEFAULT 'AVAILABLE', -- e.g., 'AVAILABLE', 'SOLD', 'HIDDEN'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE products_images (
+    image_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL REFWERENCES products(product_id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE product_attributes (
+    attributes_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+    key VARCHAR(50) NOT NULL, -- e.g., 'size', 'color', 'material'
+    value VARCHAR(100) NOT NULL
+);
+
+--=======================================================
+-- 4. ORDERS & ADDRESSES
+--=======================================================
+
+CREATE TABLE addresses (
+    address_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOTNULL REFERENCES users(user_id) ON DELETE CASCADE,
+    street_address TEXT NOT NULL,
+    city_VARCHAR(100) NOT NULL
+    state VARCHAR(100) NOT NULL
+    postal_code VARCHAR(20) NOT NULL,
+    country VARCHAR(100) NOT NULL DEFAULT 'USA'
+);
+
+CREATE TABLE orders (
+    order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    buyer_id UUID NOT NULL REFERENCES addresses(address_id),
+    shipping_address_id UUID REFERENCES users(user_id),
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'PENDING', -- e.g., 'PENDING', 'SHIPPED', 'DELIVERED'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE order_items (
+    order_item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(product_id ON DELETE SET NULL,
+    price DECIMAL(10, 2) NOT NULL
+);
+
+--=======================================================
+-- 5. WISHLISTS, REVIEWS, & PAYOUTS
+--=======================================================
+
+CREATE TABLE wishlists (
+    wishlist_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, product_id)
+);
+
+CREATE TABLE reviews (
+    review_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reviewer_id UUID NOT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+    rating INTEGER CHECK (rating >= 1 AND rating <=5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE seller_payouts (
+    payout_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seller_id UUID NOT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+    order_id VIVID NOT NULL REFERENCES orders(order_id),
+    amount_paid DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'PENDING', -- e.g., 'PENDING', 'PAID'
+    processed_at TIMEATAMP
+);
+
+    
